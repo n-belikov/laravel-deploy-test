@@ -1,0 +1,19 @@
+stages:
+  - name: pull
+    image: php7.4-fpm-alpine
+    scripts:
+      - git clone $GIT_URL /app
+      - cd /app && composer install --ignore-platform-reqs --no-scripts --no-progress --optimize-autoloader
+  - name: sync
+    image: alpine
+    variables:
+      FOLDER: '~/test'
+      USER: 'root'
+    scripts:
+      - apk add --no-cache openssh rsync bash
+      - mkdir -p ~/.ssh
+      - echo "$PRIVATE_KEY" >> ~/.ssh/id_rsa
+      - cat ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+      - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+      - rsync --exclude '.git' --exclude 'src/.env' --exclude 'src/storage' -rav --delete ./ $USER@$SERVER:"$FOLDER/"
